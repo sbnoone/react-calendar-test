@@ -153,41 +153,34 @@ function App() {
 		return (event.title as string).toLocaleLowerCase().includes(searchText.toLocaleLowerCase())
 	})
 
-	const moveEvent = useCallback(
-		({
-			event,
-			start,
-			end,
-			resourceId,
-			isAllDay: droppedOnAllDaySlot = false,
-		}: MoveOrResizeEventOptions) => {
-			const { allDay } = event
-			if (!allDay && droppedOnAllDaySlot) {
-				event.allDay = true
-			}
+	const moveEvent: NonNullable<withDragAndDropProps<MyEvent, MyResource>['onEventDrop']> =
+		useCallback(
+			({ event, start, end, isAllDay: droppedOnAllDaySlot = false }) => {
+				const { allDay } = event
+				if (!allDay && droppedOnAllDaySlot) {
+					event.allDay = true
+				}
 
-			setMyEvents((prev) => {
-				const existing = prev.find((ev) => ev.id === event.id) ?? {}
-				const filtered = prev.filter((ev) => ev.id !== event.id)
-				return [...filtered, { ...existing, start, end, resourceId, allDay }] as MyEvent[]
-			})
-		},
-		[setMyEvents]
-	)
+				setMyEvents((prev) => {
+					const existing = prev.find((ev) => ev.id === event.id) ?? {}
+					const filtered = prev.filter((ev) => ev.id !== event.id)
+					return [...filtered, { ...existing, start, end, allDay }] as MyEvent[]
+				})
+			},
+			[setMyEvents]
+		)
 
-	const resizeEvent: withDragAndDropProps<MyEvent, MyResource>['onEventResize'] = ({
-		event,
-		start,
-		end,
-	}) => {
-		setMyEvents((prev) => {
-			const existing = prev.find((ev) => ev.id === event.id) ?? {}
-			const filtered = prev.filter((ev) => ev.id !== event.id)
-			return [...filtered, { ...existing, start, end }] as MyEvent[]
-		})
-	}
-
-	const memoizedResizeEvent = useCallback(resizeEvent, [setMyEvents])
+	const resizeEvent: NonNullable<withDragAndDropProps<MyEvent, MyResource>['onEventResize']> =
+		useCallback(
+			({ event, start, end }) => {
+				setMyEvents((prev) => {
+					const existing = prev.find((ev) => ev.id === event.id) ?? {}
+					const filtered = prev.filter((ev) => ev.id !== event.id)
+					return [...filtered, { ...existing, start, end }] as MyEvent[]
+				})
+			},
+			[setMyEvents]
+		)
 
 	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
 		console.log(event)
@@ -246,8 +239,7 @@ function App() {
 					// events={myEvents}
 					localizer={localizer}
 					onEventDrop={moveEvent}
-					// onEventResize={resizeEvent}
-					onEventResize={memoizedResizeEvent}
+					onEventResize={resizeEvent}
 					resizable
 					resourceIdAccessor='resourceId'
 					resources={resourceMap}
