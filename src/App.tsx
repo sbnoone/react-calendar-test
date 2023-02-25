@@ -1,28 +1,19 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Calendar, Event, Views, dayjsLocalizer, Components } from 'react-big-calendar'
-import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
+import {
+	Calendar,
+	Event,
+	Views,
+	dayjsLocalizer,
+	Components,
+	EventProps,
+	CalendarProps,
+} from 'react-big-calendar'
+import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
-import dayjs from 'dayjs'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isBetween from 'dayjs/plugin/isBetween'
-import localeData from 'dayjs/plugin/localeData'
-import minMax from 'dayjs/plugin/minMax'
-import localizedFormat from 'dayjs/plugin/localizedFormat'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-dayjs.locale('en')
-dayjs.extend(isSameOrBefore)
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isBetween)
-dayjs.extend(localeData)
-dayjs.extend(minMax)
-dayjs.extend(localizedFormat)
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(timezone)
+import dayjs from './config/date'
+import { uid } from './utils/uid'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -111,10 +102,56 @@ interface MoveOrResizeEventOptions {
 	resourceId?: number
 }
 
-/* Task Description: Create a calendar grid with the ability to create and organize tasks. Required Functionality: Create and edit tasks inside calendar cells (days) in an inline manner.Reassign tasks between days (calendar cells) using drag and drop.Reorder task in one cell using drag and drop.Filter tasks in the calendar by a searching text.Create and edit labels for tasks (color, text).Assign multiple labels to the task.Filter tasks by labels.Import and export calendar to file (json or other formats).Ability to download the calendar as an image.Show worldwide holidays for each day in the calendar. Holiday name must be fixed at of the cell and must not participate in re-ordering. API - (https://date.nager.at/swagger/index.html) */
+/* Task Description: Create a calendar grid with the ability to create and organize tasks. 
+Required Functionality: 
+ 1. Create and edit tasks inside calendar cells (days) in an inline manner.
+ 2. Reassign tasks between days (calendar cells) using drag and drop.
+ 3. Reorder task in one cell using drag and drop.
+ 4. Filter tasks in the calendar by a searching text.
+ 5. Create and edit labels for tasks (color, text).Assign multiple labels to the task.Filter tasks by labels.
+ 6. Import and export calendar to file (json or other formats).
+ 7. Ability to download the calendar as an image.Show worldwide holidays for each day in the calendar. 
+ 8. Holiday name must be fixed at of the cell and must not participate in re-ordering. 
+ API - (https://date.nager.at/swagger/index.html)
+*/
+
+const CustomDayEvent = ({ children }: EventProps<MyEvent> & { children?: any }) => {
+	return <div style={{ color: 'black' }}>{children}</div>
+}
+
+const CustomEventContainerWrapper = ({ children }: any) => {
+	return <div style={{ border: '1px solid green' }}>{children}</div>
+}
+
+const CustomEventWrapper = ({ children }: any) => {
+	return <div style={{ border: '1px solid pink' }}>{children}</div>
+}
+
+const CustomEvent = ({ event }: EventProps<MyEvent>) => {
+	return <div>{event.title}</div>
+}
+const CustomDateCellWrapper = ({ children }: any) => {
+	return <div style={{ border: '1px dashed yellow' }}>{children}</div>
+}
+
+const MyMonthHeader = ({ children }: any) => {
+	return <div>{children} header</div>
+}
+const MyMonthDateHeader = ({ children }: any) => {
+	return <div>{children} date header</div>
+}
+const MyMonthEvent = ({ children }: any) => {
+	return <div>{children} month event</div>
+}
 
 function App() {
 	const [myEvents, setMyEvents] = useState<MyEvent[]>(events)
+
+	const [searchText, setSearchText] = useState<string>('')
+
+	const filteredEvents = myEvents.filter((event) => {
+		return (event.title as string).toLocaleLowerCase().includes(searchText.toLocaleLowerCase())
+	})
 
 	const moveEvent = useCallback(
 		({
@@ -138,16 +175,23 @@ function App() {
 		[setMyEvents]
 	)
 
-	const resizeEvent = useCallback(
-		({ event, start, end }: MoveOrResizeEventOptions) => {
-			setMyEvents((prev) => {
-				const existing = prev.find((ev) => ev.id === event.id) ?? {}
-				const filtered = prev.filter((ev) => ev.id !== event.id)
-				return [...filtered, { ...existing, start, end }] as MyEvent[]
-			})
-		},
-		[setMyEvents]
-	)
+	const resizeEvent: withDragAndDropProps<MyEvent, MyResource>['onEventResize'] = ({
+		event,
+		start,
+		end,
+	}) => {
+		setMyEvents((prev) => {
+			const existing = prev.find((ev) => ev.id === event.id) ?? {}
+			const filtered = prev.filter((ev) => ev.id !== event.id)
+			return [...filtered, { ...existing, start, end }] as MyEvent[]
+		})
+	}
+
+	const memoizedResizeEvent = useCallback(resizeEvent, [setMyEvents])
+
+	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
+		console.log(event)
+	}
 
 	const { defaultDate, scrollToTime } = useMemo(
 		() => ({
@@ -157,24 +201,53 @@ function App() {
 		[]
 	)
 
+	const onSelectSlot: CalendarProps<MyEvent, MyResource>['onSelectSlot'] = (slotInfo) => {
+		console.log(slotInfo)
+
+		setMyEvents((e) => {
+			return [...e, { ...slotInfo, id: uid(), resourceId: 2, title: 'TEST' }]
+		})
+	}
+
 	const components: Components<MyEvent, MyResource> = useMemo(
 		() => ({
-			day: { event: () => <div>event</div>, header: () => <div>header</div> },
+			dateCellWrapper: CustomDateCellWrapper, // day cell
+			eventWrapper: CustomEventWrapper,
+			eventContainerWrapper: CustomEventContainerWrapper,
+			event: CustomEvent,
+			// day: { event: CustomDayEvent, header: ({}) => <div>header</div> },
+			// month: {
+			// 	header: MyMonthHeader,
+			// 	dateHeader: MyMonthDateHeader,
+			// 	event: MyMonthEvent,
+			// },
 		}),
 		[]
 	)
 
 	return (
 		<div>
+			<div>
+				<input
+					type='text'
+					value={searchText}
+					onChange={(e) => setSearchText(e.target.value.trim())}
+					placeholder='Search events...'
+				/>
+			</div>
 			<div style={{ height: 600 }}>
 				<DragAndDropCalendar
-					components={components}
+					onSelectSlot={onSelectSlot}
+					onSelectEvent={onSelectEvent}
+					// components={components}
 					defaultDate={defaultDate}
 					defaultView={Views.MONTH}
-					events={myEvents}
+					events={filteredEvents}
+					// events={myEvents}
 					localizer={localizer}
 					onEventDrop={moveEvent}
-					onEventResize={resizeEvent}
+					// onEventResize={resizeEvent}
+					onEventResize={memoizedResizeEvent}
 					resizable
 					resourceIdAccessor='resourceId'
 					resources={resourceMap}
