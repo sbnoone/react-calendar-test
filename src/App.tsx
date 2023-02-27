@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { PropsWithChildren, useCallback, useMemo, useState } from 'react'
 import {
 	Calendar,
 	Event,
@@ -7,6 +7,7 @@ import {
 	Components,
 	EventProps,
 	CalendarProps,
+	EventWrapperProps,
 } from 'react-big-calendar'
 import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
@@ -14,6 +15,8 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
 import dayjs from './config/date'
 import { uid } from './utils/uid'
+import { Input, Modal, Typography } from '@mui/material'
+import { Box } from '@mui/system'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -92,16 +95,6 @@ interface MyEvent extends Event {
 
 type MyResource = typeof resourceMap[number]
 
-type StringOrDate = string | Date
-
-interface MoveOrResizeEventOptions {
-	event: MyEvent
-	start: StringOrDate
-	end: StringOrDate
-	isAllDay: boolean
-	resourceId?: number
-}
-
 /* Task Description: Create a calendar grid with the ability to create and organize tasks. 
 Required Functionality: 
  1. Create and edit tasks inside calendar cells (days) in an inline manner.
@@ -115,16 +108,30 @@ Required Functionality:
  API - (https://date.nager.at/swagger/index.html)
 */
 
-const CustomDayEvent = ({ children }: EventProps<MyEvent> & { children?: any }) => {
-	return <div style={{ color: 'black' }}>{children}</div>
+const CustomDayEvent = ({ title }: EventProps<MyEvent>) => {
+	return (
+		<div
+			data-day-event
+			style={{ color: 'black' }}
+		>
+			{title}
+		</div>
+	)
 }
 
 const CustomEventContainerWrapper = ({ children }: any) => {
-	return <div style={{ border: '1px solid green' }}>{children}</div>
+	return (
+		<div
+			data-event-container-wrapper
+			style={{ border: '1px solid green' }}
+		>
+			{children}
+		</div>
+	)
 }
 
-const CustomEventWrapper = ({ children }: any) => {
-	return <div style={{ border: '1px solid pink' }}>{children}</div>
+const CustomEventWrapper = ({ children }: PropsWithChildren<EventWrapperProps<MyEvent>>) => {
+	return <div data-event-wrapper>{children}</div>
 }
 
 const CustomEvent = ({ event }: EventProps<MyEvent>) => {
@@ -140,11 +147,16 @@ const MyMonthHeader = ({ children }: any) => {
 const MyMonthDateHeader = ({ children }: any) => {
 	return <div>{children} date header</div>
 }
-const MyMonthEvent = ({ children }: any) => {
-	return <div>{children} month event</div>
+
+const MyTimeSlotWrapper = ({ children }: any) => {
+	return <div data-time-slot-wrapper>{children} time slot</div>
+}
+const MyMonthEvent = ({ title }: EventProps<MyEvent>) => {
+	return <div data-month-event>{title}</div>
 }
 
 function App() {
+	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [myEvents, setMyEvents] = useState<MyEvent[]>(events)
 
 	const [searchText, setSearchText] = useState<string>('')
@@ -184,6 +196,7 @@ function App() {
 
 	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
 		console.log(event)
+		setIsModalOpen(true)
 	}
 
 	const { defaultDate, scrollToTime } = useMemo(
@@ -204,16 +217,17 @@ function App() {
 
 	const components: Components<MyEvent, MyResource> = useMemo(
 		() => ({
-			dateCellWrapper: CustomDateCellWrapper, // day cell
+			// dateCellWrapper: CustomDateCellWrapper, // day cell
 			eventWrapper: CustomEventWrapper,
 			eventContainerWrapper: CustomEventContainerWrapper,
-			event: CustomEvent,
-			// day: { event: CustomDayEvent, header: ({}) => <div>header</div> },
-			// month: {
-			// 	header: MyMonthHeader,
-			// 	dateHeader: MyMonthDateHeader,
-			// 	event: MyMonthEvent,
-			// },
+			timeSlotWrapper: MyTimeSlotWrapper,
+			// event: CustomEvent,
+			day: { event: CustomDayEvent },
+			month: {
+				// header: MyMonthHeader,
+				// dateHeader: MyMonthDateHeader,
+				event: MyMonthEvent,
+			},
 		}),
 		[]
 	)
@@ -232,9 +246,10 @@ function App() {
 				<DragAndDropCalendar
 					onSelectSlot={onSelectSlot}
 					onSelectEvent={onSelectEvent}
-					// components={components}
+					components={components}
 					defaultDate={defaultDate}
 					defaultView={Views.MONTH}
+					views={{ month: true }}
 					events={filteredEvents}
 					// events={myEvents}
 					localizer={localizer}
@@ -250,6 +265,39 @@ function App() {
 					step={15}
 				/>
 			</div>
+
+			<Modal
+				open={isModalOpen}
+				onClose={() => setIsModalOpen(false)}
+				aria-labelledby='modal-modal-title'
+				aria-describedby='modal-modal-description'
+			>
+				<Box
+					sx={{
+						position: 'absolute',
+						top: '50%',
+						left: '50%',
+						transform: 'translate(-50%, -50%)',
+						width: 400,
+						bgcolor: 'whitesmoke',
+						boxShadow: 24,
+						p: 4,
+					}}
+				>
+					<Typography
+						id='modal-modal-title'
+						variant='h6'
+						component='h2'
+					>
+						Text in a modal
+					</Typography>
+
+					<Input
+						type='text'
+						placeholder='Event title'
+					/>
+				</Box>
+			</Modal>
 		</div>
 	)
 }
