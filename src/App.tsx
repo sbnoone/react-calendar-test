@@ -8,6 +8,7 @@ import {
 	EventProps,
 	CalendarProps,
 	EventWrapperProps,
+	SlotInfo,
 } from 'react-big-calendar'
 import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
@@ -15,8 +16,9 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
 import dayjs from './config/date'
 import { uid } from './utils/uid'
-import { Input, Modal, Typography } from '@mui/material'
+import { Button, Input, Modal, Typography } from '@mui/material'
 import { Box } from '@mui/system'
+import { useBoolean } from './hooks/useBoolean'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -156,8 +158,9 @@ const MyMonthEvent = ({ title }: EventProps<MyEvent>) => {
 }
 
 function App() {
-	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [myEvents, setMyEvents] = useState<MyEvent[]>(events)
+	const { bool: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBoolean()
+	const [selectedSlotInfo, setSelectedSlotInfo] = useState<any>()
 
 	const [searchText, setSearchText] = useState<string>('')
 
@@ -196,22 +199,20 @@ function App() {
 
 	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
 		console.log(event)
-		setIsModalOpen(true)
+		openModal()
 	}
 
-	const { defaultDate, scrollToTime } = useMemo(
-		() => ({
-			defaultDate: new Date(2018, 0, 29),
-			scrollToTime: new Date(1972, 0, 1, 8),
-		}),
-		[]
-	)
-
 	const onSelectSlot: CalendarProps<MyEvent, MyResource>['onSelectSlot'] = (slotInfo) => {
-		console.log(slotInfo)
+		setSelectedSlotInfo(slotInfo)
+		openModal()
+		// setMyEvents((e) => {
+		// 	return [...e, { ...slotInfo, id: uid(), resourceId: 2, title: 'TEST' }]
+		// })
+	}
 
+	const addEvent = ({ slotInfo, title }: { slotInfo: SlotInfo; title: string }) => {
 		setMyEvents((e) => {
-			return [...e, { ...slotInfo, id: uid(), resourceId: 2, title: 'TEST' }]
+			return [...e, { ...slotInfo, title, id: uid(), resourceId: 2 }]
 		})
 	}
 
@@ -228,6 +229,14 @@ function App() {
 				// dateHeader: MyMonthDateHeader,
 				event: MyMonthEvent,
 			},
+		}),
+		[]
+	)
+
+	const { defaultDate, scrollToTime } = useMemo(
+		() => ({
+			defaultDate: new Date(2023, 2, 1),
+			scrollToTime: new Date(1972, 0, 1, 8),
 		}),
 		[]
 	)
@@ -266,39 +275,90 @@ function App() {
 				/>
 			</div>
 
-			<Modal
-				open={isModalOpen}
-				onClose={() => setIsModalOpen(false)}
-				aria-labelledby='modal-modal-title'
-				aria-describedby='modal-modal-description'
-			>
-				<Box
-					sx={{
-						position: 'absolute',
-						top: '50%',
-						left: '50%',
-						transform: 'translate(-50%, -50%)',
-						width: 400,
-						bgcolor: 'whitesmoke',
-						boxShadow: 24,
-						p: 4,
-					}}
-				>
-					<Typography
-						id='modal-modal-title'
-						variant='h6'
-						component='h2'
-					>
-						Text in a modal
-					</Typography>
-
-					<Input
-						type='text'
-						placeholder='Event title'
-					/>
-				</Box>
-			</Modal>
+			{isModalOpen && (
+				<EventModal
+					addEvent={addEvent}
+					slotInfo={selectedSlotInfo}
+					isOpen={isModalOpen}
+					onClose={closeModal}
+				/>
+			)}
 		</div>
+	)
+}
+
+const EventModal = ({
+	isOpen,
+	onClose,
+	slotInfo,
+	addEvent,
+}: {
+	isOpen: boolean
+	onClose: () => void
+	slotInfo: SlotInfo
+	addEvent: (o: { slotInfo: SlotInfo; title: string }) => void
+}) => {
+	const [title, setTitle] = useState('')
+
+	const onChangeTitle = (e: any) => {
+		setTitle(e.target.value.trim())
+	}
+
+	const handleAddEvent = () => {
+		if (!title) return
+		addEvent({ slotInfo, title })
+		onClose()
+	}
+
+	return (
+		<Modal
+			open={isOpen}
+			onClose={onClose}
+			aria-labelledby='modal-modal-title'
+			aria-describedby='modal-modal-description'
+		>
+			<Box
+				sx={{
+					position: 'absolute',
+					top: '50%',
+					left: '50%',
+					transform: 'translate(-50%, -50%)',
+					width: 400,
+					bgcolor: 'whitesmoke',
+					boxShadow: 24,
+					p: 4,
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					gap: '10px',
+				}}
+			>
+				<Typography
+					id='modal-modal-title'
+					variant='h6'
+					component='h2'
+				>
+					Text in a modal
+				</Typography>
+
+				<Input
+					autoFocus
+					fullWidth
+					type='text'
+					placeholder='Event title'
+					value={title}
+					onChange={onChangeTitle}
+				/>
+
+				<Button
+					onClick={handleAddEvent}
+					type='button'
+					variant='contained'
+				>
+					Add
+				</Button>
+			</Box>
+		</Modal>
 	)
 }
 
