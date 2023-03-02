@@ -293,6 +293,7 @@ const EventModal = ({
 		slotInfo,
 		event,
 	})
+	const inputRef = useRef<HTMLInputElement | null>(null)
 	const [title, setTitle] = useState<ReactNode>(event?.title ?? '')
 
 	const onChangeTitle = (e: any) => {
@@ -321,8 +322,6 @@ const EventModal = ({
 		addEvent({ slotInfo, title })
 		onClose()
 	}
-
-	const inputRef = useRef<HTMLInputElement | null>(null)
 
 	useEffect(() => {
 		const input = inputRef.current
@@ -379,7 +378,7 @@ const EventModal = ({
 					type='button'
 					variant='contained'
 				>
-					Add
+					{event ? 'Edit' : 'Add'}
 				</Button>
 			</Box>
 		</Modal>
