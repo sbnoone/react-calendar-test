@@ -1,17 +1,6 @@
-import {
-	Dispatch,
-	PropsWithChildren,
-	ReactNode,
-	SetStateAction,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react'
+import { PropsWithChildren, ReactNode, useCallback, useMemo, useState } from 'react'
 import {
 	Calendar,
-	Event,
 	Views,
 	dayjsLocalizer,
 	Components,
@@ -26,9 +15,9 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
 import dayjs from './config/date'
 import { uid } from './utils/uid'
-import { Button, Input, Modal, Typography } from '@mui/material'
-import { Box } from '@mui/system'
 import { useBoolean } from './hooks/useBoolean'
+import { EventModal } from './components/event-modal/event-modal'
+import { MyEvent, MyResource } from './types/events'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -43,27 +32,14 @@ const events: MyEvent[] = [
 	// 	resourceId: 1,
 	// },
 	// {
-	// 	id: 1,
-	// 	title: 'MS training',
-	// 	start: new Date(2018, 0, 29, 14, 0, 0),
-	// 	end: new Date(2018, 0, 29, 16, 30, 0),
-	// 	resourceId: 2,
-	// },
 ]
 
-const resourceMap = [
+const resourceMap: MyResource[] = [
 	{ resourceId: 1, resourceTitle: 'Board room' },
 	{ resourceId: 2, resourceTitle: 'Training room' },
 	{ resourceId: 3, resourceTitle: 'Meeting room 1' },
 	{ resourceId: 4, resourceTitle: 'Meeting room 2' },
 ]
-
-interface MyEvent extends Event {
-	id: number | string
-	resourceId: number | string
-}
-
-type MyResource = typeof resourceMap[number]
 
 /* Task Description: Create a calendar grid with the ability to create and organize tasks. 
 Required Functionality: 
@@ -128,8 +104,8 @@ const MyMonthEvent = ({ title }: EventProps<MyEvent>) => {
 function App() {
 	const [myEvents, setMyEvents] = useState<MyEvent[]>(events)
 	const { bool: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBoolean()
-	const [selectedSlotInfo, setSelectedSlotInfo] = useState<any>()
-	const [selectedEvent, setSelectedEvent] = useState<any>()
+	const [selectedSlotInfo, setSelectedSlotInfo] = useState<SlotInfo | null>(null)
+	const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null)
 	console.log(myEvents)
 	const [searchText, setSearchText] = useState<string>('')
 
@@ -180,7 +156,8 @@ function App() {
 		// })
 	}
 
-	const addEvent = ({ slotInfo, title }: { slotInfo: SlotInfo; title: ReactNode }) => {
+	const addEvent = ({ slotInfo, title }: { slotInfo?: SlotInfo | null; title: ReactNode }) => {
+		if (!slotInfo) return
 		const { end, start } = slotInfo
 		const newEvent: MyEvent = {
 			start,
@@ -271,117 +248,6 @@ function App() {
 				/>
 			)}
 		</div>
-	)
-}
-
-const EventModal = ({
-	isOpen,
-	onClose,
-	slotInfo,
-	addEvent,
-	event,
-	setEvents,
-}: {
-	isOpen: boolean
-	onClose: () => void
-	slotInfo: SlotInfo
-	event?: MyEvent
-	setEvents: Dispatch<SetStateAction<MyEvent[]>>
-	addEvent: (o: { slotInfo: SlotInfo; title: ReactNode }) => void
-}) => {
-	console.log({
-		slotInfo,
-		event,
-	})
-	const inputRef = useRef<HTMLInputElement | null>(null)
-	const [title, setTitle] = useState<ReactNode>(event?.title ?? '')
-
-	const onChangeTitle = (e: any) => {
-		setTitle(e.target.value.trim())
-	}
-
-	const handleAddEvent = () => {
-		if (!title) return
-
-		if (event) {
-			setEvents((events) => {
-				return events.map((e) => {
-					if (e.id === event.id) {
-						return {
-							...e,
-							title,
-						}
-					}
-					return e
-				})
-			})
-
-			return onClose()
-		}
-
-		addEvent({ slotInfo, title })
-		onClose()
-	}
-
-	useEffect(() => {
-		const input = inputRef.current
-		if (input) {
-			input.focus()
-			const length = input.value.length
-			input.setSelectionRange(length, length)
-		}
-	}, [])
-
-	return (
-		<Modal
-			open={isOpen}
-			onClose={onClose}
-			aria-labelledby='modal-modal-title'
-			aria-describedby='modal-modal-description'
-		>
-			<Box
-				sx={{
-					position: 'absolute',
-					top: '50%',
-					left: '50%',
-					transform: 'translate(-50%, -50%)',
-					width: 400,
-					bgcolor: 'whitesmoke',
-					boxShadow: 24,
-					p: 4,
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					gap: '10px',
-				}}
-			>
-				<Typography
-					id='modal-modal-title'
-					variant='h6'
-					component='h2'
-				>
-					Text in a modal
-				</Typography>
-
-				<Input
-					inputRef={inputRef}
-					autoFocus
-					fullWidth
-					type='text'
-					placeholder='Event title'
-					value={title}
-					onChange={onChangeTitle}
-				/>
-
-				<Button
-					onClick={handleAddEvent}
-					type='button'
-					variant='contained'
-				>
-					{event ? 'Edit' : 'Add'}
-				</Button>
-			</Box>
-		</Modal>
 	)
 }
 
