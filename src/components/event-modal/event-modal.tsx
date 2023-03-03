@@ -1,4 +1,4 @@
-import { Modal, Box, Typography, Input, Button } from '@mui/material'
+import { Modal, Box, Typography, Input, Button, InputLabel } from '@mui/material'
 import {
 	Dispatch,
 	SetStateAction,
@@ -7,6 +7,7 @@ import {
 	useState,
 	FormEventHandler,
 	useEffect,
+	ChangeEventHandler,
 } from 'react'
 import { SlotInfo } from 'react-big-calendar'
 import { MyEvent } from 'types/events'
@@ -17,7 +18,7 @@ export interface EventModalProps {
 	slotInfo?: SlotInfo | null
 	event?: MyEvent | null
 	setEvents: Dispatch<SetStateAction<MyEvent[]>>
-	addEvent: (o: { slotInfo?: SlotInfo | null; title: ReactNode }) => void
+	addEvent: (o: { slotInfo?: SlotInfo | null; title: ReactNode; textColor: string }) => void
 }
 
 export const EventModal = ({
@@ -34,9 +35,14 @@ export const EventModal = ({
 	})
 	const inputRef = useRef<HTMLInputElement | null>(null)
 	const [title, setTitle] = useState<ReactNode>(event?.title ?? '')
+	const [textColor, setTextColor] = useState(event?.textColor ?? '#ffffff')
 
 	const onChangeTitle = (e: any) => {
 		setTitle(e.target.value.trim())
+	}
+
+	const handleTextColorChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+		setTextColor(e.target.value)
 	}
 
 	const onSubmit: FormEventHandler<HTMLFormElement> = (e) => {
@@ -50,6 +56,7 @@ export const EventModal = ({
 						return {
 							...e,
 							title,
+							textColor,
 						}
 					}
 					return e
@@ -59,7 +66,7 @@ export const EventModal = ({
 			return onClose()
 		}
 
-		addEvent({ slotInfo, title })
+		addEvent({ slotInfo, title, textColor })
 		onClose()
 	}
 
@@ -102,7 +109,7 @@ export const EventModal = ({
 					variant='h6'
 					component='h2'
 				>
-					Text in a modal
+					{event ? 'Edit event' : 'Add event'}
 				</Typography>
 
 				<Input
@@ -114,6 +121,39 @@ export const EventModal = ({
 					value={title}
 					onChange={onChangeTitle}
 				/>
+
+				<InputLabel
+					sx={{
+						alignSelf: 'flex-start',
+						display: 'flex',
+						alignItems: 'center',
+						gap: '10px',
+						':focus-within': {
+							outline: '1px solid blue',
+						},
+					}}
+				>
+					<Input
+						disableUnderline
+						type='color'
+						value={textColor}
+						onChange={handleTextColorChange}
+						inputProps={{
+							sx: {
+								appearance: 'none',
+								width: 30,
+								height: 30,
+								borderRadius: '100%',
+								overflow: 'hidden',
+								p: 0,
+								'&::-webkit-color-swatch': {
+									borderRadius: '100%',
+								},
+							},
+						}}
+					/>
+					<Typography>Text color: {textColor}</Typography>
+				</InputLabel>
 
 				<Box
 					display='flex'

@@ -18,6 +18,7 @@ import { uid } from './utils/uid'
 import { useBoolean } from './hooks/useBoolean'
 import { EventModal } from './components/event-modal/event-modal'
 import { MyEvent, MyResource } from './types/events'
+import { Box } from '@mui/material'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -53,53 +54,6 @@ Required Functionality:
  8. Holiday name must be fixed at of the cell and must not participate in re-ordering. 
  API - (https://date.nager.at/swagger/index.html)
 */
-
-const CustomDayEvent = ({ title }: EventProps<MyEvent>) => {
-	return (
-		<div
-			data-day-event
-			style={{ color: 'black' }}
-		>
-			{title}
-		</div>
-	)
-}
-
-const CustomEventContainerWrapper = ({ children }: any) => {
-	return (
-		<div
-			data-event-container-wrapper
-			style={{ border: '1px solid green' }}
-		>
-			{children}
-		</div>
-	)
-}
-
-const CustomEventWrapper = ({ children }: PropsWithChildren<EventWrapperProps<MyEvent>>) => {
-	return <div data-event-wrapper>{children}</div>
-}
-
-const CustomEvent = ({ event }: EventProps<MyEvent>) => {
-	return <div>{event.title}</div>
-}
-const CustomDateCellWrapper = ({ children }: any) => {
-	return <div style={{ border: '1px dashed yellow' }}>{children}</div>
-}
-
-const MyMonthHeader = ({ children }: any) => {
-	return <div>{children} header</div>
-}
-const MyMonthDateHeader = ({ children }: any) => {
-	return <div>{children} date header</div>
-}
-
-const MyTimeSlotWrapper = ({ children }: any) => {
-	return <div data-time-slot-wrapper>{children} time slot</div>
-}
-const MyMonthEvent = ({ title }: EventProps<MyEvent>) => {
-	return <div data-month-event>{title}</div>
-}
 
 function App() {
 	const [myEvents, setMyEvents] = useState<MyEvent[]>(events)
@@ -156,7 +110,15 @@ function App() {
 		// })
 	}
 
-	const addEvent = ({ slotInfo, title }: { slotInfo?: SlotInfo | null; title: ReactNode }) => {
+	const addEvent = ({
+		slotInfo,
+		title,
+		textColor,
+	}: {
+		slotInfo?: SlotInfo | null
+		title: ReactNode
+		textColor: string
+	}) => {
 		if (!slotInfo) return
 		const { end, start } = slotInfo
 		const newEvent: MyEvent = {
@@ -165,6 +127,7 @@ function App() {
 			title,
 			id: uid(),
 			resourceId: 2,
+			textColor,
 		}
 
 		setMyEvents((e) => {
@@ -187,9 +150,9 @@ function App() {
 			// event: CustomEvent,
 			day: { event: CustomDayEvent },
 			month: {
+				event: MyMonthEvent,
 				// header: MyMonthHeader,
 				// dateHeader: MyMonthDateHeader,
-				// event: MyMonthEvent,
 			},
 		}),
 		[]
@@ -234,6 +197,7 @@ function App() {
 					selectable
 					showMultiDayTimes={true}
 					step={15}
+					popup
 				/>
 			</div>
 
@@ -252,3 +216,60 @@ function App() {
 }
 
 export default App
+
+const CustomDayEvent = ({ title }: EventProps<MyEvent>) => {
+	return (
+		<div
+			data-day-event
+			style={{ color: 'black' }}
+		>
+			{title}
+		</div>
+	)
+}
+
+const CustomEventContainerWrapper = ({ children }: any) => {
+	return (
+		<div
+			data-event-container-wrapper
+			style={{ border: '1px solid green' }}
+		>
+			{children}
+		</div>
+	)
+}
+
+const CustomEventWrapper = ({ children }: PropsWithChildren<EventWrapperProps<MyEvent>>) => {
+	return <div data-event-wrapper>{children}</div>
+}
+
+const MyMonthEvent = ({ title, event }: EventProps<MyEvent>) => {
+	return (
+		<Box
+			sx={{
+				color: event.textColor,
+				border: '5px solid red',
+			}}
+		>
+			{title}
+		</Box>
+	)
+}
+
+const CustomEvent = ({ event }: EventProps<MyEvent>) => {
+	return <div>{event.title}</div>
+}
+const CustomDateCellWrapper = ({ children }: any) => {
+	return <div style={{ border: '1px dashed yellow' }}>{children}</div>
+}
+
+const MyMonthHeader = ({ children }: any) => {
+	return <div>{children} header</div>
+}
+const MyMonthDateHeader = ({ children }: any) => {
+	return <div>{children} date header</div>
+}
+
+const MyTimeSlotWrapper = ({ children }: any) => {
+	return <div data-time-slot-wrapper>{children} time slot</div>
+}
