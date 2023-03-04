@@ -1,4 +1,4 @@
-import { PropsWithChildren, ReactNode, useCallback, useMemo, useState } from 'react'
+import { PropsWithChildren, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	Calendar,
 	Views,
@@ -18,21 +18,34 @@ import { uid } from './utils/uid'
 import { useBoolean } from './hooks/useBoolean'
 import { EventModal } from './components/event-modal/event-modal'
 import { MyEvent, MyResource } from './types/events'
-import { Box } from '@mui/material'
+import { Box, Button, Input } from '@mui/material'
+import { api } from './api'
 
 const localizer = dayjsLocalizer(dayjs)
 
 const DragAndDropCalendar = withDragAndDrop<MyEvent, MyResource>(Calendar)
 
 const events: MyEvent[] = [
-	// {
-	// 	id: 0,
-	// 	title: 'Board meeting',
-	// 	start: new Date(2018, 0, 29, 9, 0, 0),
-	// 	end: new Date(2018, 0, 29, 13, 0, 0),
-	// 	resourceId: 1,
-	// },
-	// {
+	{
+		id: 0,
+		title: 'BD',
+		start: new Date(2023, 2, 19, 0, 0, 0),
+		end: new Date(2023, 2, 20, 0, 0, 0),
+		resourceId: 1,
+		textColor: '#ffffff',
+	},
+]
+
+const backgroundEvents: MyEvent[] = [
+	{
+		id: 1,
+		title: 'Womans day',
+		start: new Date(2023, 2, 4, 0, 0, 0),
+		end: new Date(2023, 2, 5, 0, 0, 0),
+		resourceId: 1,
+		textColor: '#ffffff',
+		allDay: true,
+	},
 ]
 
 const resourceMap: MyResource[] = [
@@ -62,6 +75,15 @@ function App() {
 	const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null)
 	console.log(myEvents)
 	const [searchText, setSearchText] = useState<string>('')
+
+	// useEffect(() => {
+	// 	fetchData()
+	// 	async function fetchData() {
+	// 		const { data } = await api.get(`/PublicHolidays/2023/UA`)
+	// 		// const { data } = await api.get(`/NextPublicHolidaysWorldwide`)
+	// 		console.log(data)
+	// 	}
+	// }, [])
 
 	const filteredEvents = myEvents.filter((event) => {
 		return (event.title as string).toLocaleLowerCase().includes(searchText.toLocaleLowerCase())
@@ -141,16 +163,38 @@ function App() {
 		closeModal()
 	}
 
+	const saveAsJson = () => {
+		const jsonEvents = JSON.stringify(myEvents)
+		const jsonBlob = new Blob([jsonEvents], { type: 'application/json' })
+
+		const url = URL.createObjectURL(jsonBlob)
+		const link = document.createElement('a')
+		link.setAttribute('download', 'calendar.json')
+		link.setAttribute('href', url)
+		document.body.appendChild(link)
+		link.click()
+		document.body.removeChild(link)
+		URL.revokeObjectURL(url)
+	}
+
 	const components: Components<MyEvent, MyResource> = useMemo(
 		() => ({
 			// dateCellWrapper: CustomDateCellWrapper, // day cell
-			eventWrapper: CustomEventWrapper,
-			eventContainerWrapper: CustomEventContainerWrapper,
-			timeSlotWrapper: MyTimeSlotWrapper,
+			// eventWrapper: CustomEventWrapper,
+			// eventContainerWrapper: (p: any) => {
+			// 	return <Box sx={{ border: '1px solid green' }}>{p.title}</Box>
+			// },
+			// eventContainerWrapper: CustomEventContainerWrapper,
+			// timeSlotWrapper: MyTimeSlotWrapper,
 			// event: CustomEvent,
+			backgroundEventsWrapper: (p: any) => {
+				console.log('PROPS', p)
+				return <Box sx={{ border: '10px solid green' }}>{p.children}</Box>
+			},
+
 			day: { event: CustomDayEvent },
 			month: {
-				event: MyMonthEvent,
+				// event: MyMonthEvent,
 				// header: MyMonthHeader,
 				// dateHeader: MyMonthDateHeader,
 			},
@@ -168,23 +212,38 @@ function App() {
 
 	return (
 		<div>
-			<div>
-				<input
-					type='text'
-					value={searchText}
-					onChange={(e) => setSearchText(e.target.value.trim())}
-					placeholder='Search events...'
-				/>
-			</div>
+			<Box
+				display='flex'
+				justifyContent='space-between'
+				mb={2}
+			>
+				<div>
+					<Input
+						type='text'
+						value={searchText}
+						onChange={(e) => setSearchText(e.target.value.trim())}
+						placeholder='Search events...'
+					/>
+				</div>
+				<Button
+					type='button'
+					onClick={saveAsJson}
+					variant='contained'
+				>
+					Save as JSON
+				</Button>
+			</Box>
 			<div style={{ height: 600 }}>
 				<DragAndDropCalendar
+					events={filteredEvents}
+					backgroundEvents={backgroundEvents}
 					onSelectSlot={onSelectSlot}
 					onSelectEvent={onSelectEvent}
 					components={components}
 					defaultDate={defaultDate}
 					defaultView={Views.MONTH}
-					views={{ month: true }}
-					events={filteredEvents}
+					// view='month'
+					views={{ month: true, day: true }}
 					// events={myEvents}
 					localizer={localizer}
 					onEventDrop={moveEvent}
@@ -198,6 +257,8 @@ function App() {
 					showMultiDayTimes={true}
 					step={15}
 					popup
+					showAllEvents
+					dayLayoutAlgorithm='no-overlap'
 				/>
 			</div>
 
