@@ -29,6 +29,7 @@ import { EventModal } from './components/event-modal/event-modal'
 import { MyEvent, MyResource } from './types/events'
 import { Box, Button, Input } from '@mui/material'
 import { api } from './api'
+import { saveFileAs } from './utils/saveFileAs'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -176,14 +177,10 @@ function App() {
 	const saveAsImage = async () => {
 		const imgBlob = await toBlob(calendarRef.current, { backgroundColor: '#fff' })
 		if (imgBlob) {
-			const url = URL.createObjectURL(imgBlob)
-			const link = document.createElement('a')
-			link.setAttribute('download', 'calendar.png')
-			link.setAttribute('href', url)
-			document.body.appendChild(link)
-			link.click()
-			document.body.removeChild(link)
-			URL.revokeObjectURL(url)
+			saveFileAs({
+				fileName: 'calendar.png',
+				blob: imgBlob,
+			})
 		}
 	}
 
@@ -191,14 +188,10 @@ function App() {
 		const jsonEvents = JSON.stringify(myEvents)
 		const jsonBlob = new Blob([jsonEvents], { type: 'application/json' })
 
-		const url = URL.createObjectURL(jsonBlob)
-		const link = document.createElement('a')
-		link.setAttribute('download', 'calendar.json')
-		link.setAttribute('href', url)
-		document.body.appendChild(link)
-		link.click()
-		document.body.removeChild(link)
-		URL.revokeObjectURL(url)
+		saveFileAs({
+			fileName: 'calendar.json',
+			blob: jsonBlob,
+		})
 	}
 
 	const components: Components<MyEvent, MyResource> = useMemo(
