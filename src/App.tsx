@@ -1,4 +1,12 @@
-import { PropsWithChildren, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+	PropsWithChildren,
+	ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import {
 	Calendar,
 	Views,
@@ -9,6 +17,7 @@ import {
 	EventWrapperProps,
 	SlotInfo,
 } from 'react-big-calendar'
+import { toBlob } from 'html-to-image'
 import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
@@ -75,6 +84,7 @@ function App() {
 	const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null)
 	console.log(myEvents)
 	const [searchText, setSearchText] = useState<string>('')
+	const calendarRef = useRef<any>()
 
 	// useEffect(() => {
 	// 	fetchData()
@@ -163,6 +173,20 @@ function App() {
 		closeModal()
 	}
 
+	const saveAsImage = async () => {
+		const imgBlob = await toBlob(calendarRef.current, { backgroundColor: '#fff' })
+		if (imgBlob) {
+			const url = URL.createObjectURL(imgBlob)
+			const link = document.createElement('a')
+			link.setAttribute('download', 'calendar.png')
+			link.setAttribute('href', url)
+			document.body.appendChild(link)
+			link.click()
+			document.body.removeChild(link)
+			URL.revokeObjectURL(url)
+		}
+	}
+
 	const saveAsJson = () => {
 		const jsonEvents = JSON.stringify(myEvents)
 		const jsonBlob = new Blob([jsonEvents], { type: 'application/json' })
@@ -225,16 +249,33 @@ function App() {
 						placeholder='Search events...'
 					/>
 				</div>
-				<Button
-					type='button'
-					onClick={saveAsJson}
-					variant='contained'
+				<Box
+					display='flex'
+					gap={2}
 				>
-					Save as JSON
-				</Button>
+					<Button
+						type='button'
+						onClick={saveAsImage}
+						variant='contained'
+					>
+						Save as image
+					</Button>
+					<Button
+						type='button'
+						onClick={saveAsJson}
+						variant='contained'
+					>
+						Save as JSON
+					</Button>
+				</Box>
 			</Box>
-			<div style={{ height: 600 }}>
+			<div
+				style={{ height: 600 }}
+				ref={calendarRef}
+			>
 				<DragAndDropCalendar
+					// handleDragStart={}
+
 					events={filteredEvents}
 					backgroundEvents={backgroundEvents}
 					onSelectSlot={onSelectSlot}
