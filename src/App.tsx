@@ -30,6 +30,7 @@ import { MyEvent, MyResource } from './types/events'
 import { Box, Button, Input } from '@mui/material'
 import { api } from './api'
 import { saveFileAs } from './utils/saveFileAs'
+import { PublicHolidayDto } from 'interfaces/api'
 
 const localizer = dayjsLocalizer(dayjs)
 
@@ -87,14 +88,37 @@ function App() {
 	const [searchText, setSearchText] = useState<string>('')
 	const calendarRef = useRef<any>()
 
-	// useEffect(() => {
-	// 	fetchData()
-	// 	async function fetchData() {
-	// 		const { data } = await api.get(`/PublicHolidays/2023/UA`)
-	// 		// const { data } = await api.get(`/NextPublicHolidaysWorldwide`)
-	// 		console.log(data)
-	// 	}
-	// }, [])
+	useEffect(() => {
+		fetchData()
+		async function fetchData() {
+			const { data } = await api.get<PublicHolidayDto[]>(`/NextPublicHolidaysWorldwide`)
+
+			const seenEvents: any = {}
+			const worldwideEvents = data.reduce((res: MyEvent[], v) => {
+				if (!v.name || seenEvents[v.name]) {
+					return res
+				}
+				seenEvents[v.name] = true
+
+				const event: MyEvent = {
+					id: uid(),
+					resourceId: 1,
+					textColor: '#ffffff',
+					allDay: true,
+					resource: '',
+					title: v.name,
+					start: dayjs(v.date).toDate(),
+					end: dayjs(v.date).add(1, 'day').toDate(),
+					fixed: v.fixed,
+				}
+
+				res.push(event)
+				return res
+			}, [])
+
+			setMyEvents([...myEvents, ...worldwideEvents])
+		}
+	}, [])
 
 	const filteredEvents = myEvents.filter((event) => {
 		return (event.title as string).toLocaleLowerCase().includes(searchText.toLocaleLowerCase())
@@ -103,6 +127,8 @@ function App() {
 	const moveEvent: NonNullable<withDragAndDropProps<MyEvent, MyResource>['onEventDrop']> =
 		useCallback(
 			({ event, start, end, isAllDay: droppedOnAllDaySlot = false }) => {
+				if (event.fixed) return
+
 				const { allDay } = event
 				if (!allDay && droppedOnAllDaySlot) {
 					event.allDay = true
@@ -129,18 +155,22 @@ function App() {
 			[setMyEvents]
 		)
 
+	const onDragStart: NonNullable<withDragAndDropProps<MyEvent, MyResource>['onDragStart']> =
+		useCallback(({ event, action, direction }) => {
+			console.log('onDragStart')
+		}, [])
+
 	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
+		console.log('onSelectEvent')
 		e.stopPropagation()
 		setSelectedEvent(event)
 		openModal()
 	}
 
 	const onSelectSlot: CalendarProps<MyEvent, MyResource>['onSelectSlot'] = (slotInfo) => {
+		console.log('onSelectSlot')
 		setSelectedSlotInfo(slotInfo)
 		openModal()
-		// setMyEvents((e) => {
-		// 	return [...e, { ...slotInfo, id: uid(), resourceId: 2, title: 'TEST' }]
-		// })
 	}
 
 	const addEvent = ({
@@ -185,8 +215,8 @@ function App() {
 	}
 
 	const saveAsJson = () => {
-		const jsonEvents = JSON.stringify(myEvents)
-		const jsonBlob = new Blob([jsonEvents], { type: 'application/json' })
+		const eventsAsJson = JSON.stringify(myEvents)
+		const jsonBlob = new Blob([eventsAsJson], { type: 'application/json' })
 
 		saveFileAs({
 			fileName: 'calendar.json',
@@ -267,21 +297,20 @@ function App() {
 				ref={calendarRef}
 			>
 				<DragAndDropCalendar
-					// handleDragStart={}
-
+					draggableAccessor={(event) => !event.fixed}
 					events={filteredEvents}
 					backgroundEvents={backgroundEvents}
+					onDragStart={onDragStart}
 					onSelectSlot={onSelectSlot}
 					onSelectEvent={onSelectEvent}
+					onEventDrop={moveEvent}
+					onEventResize={resizeEvent}
 					components={components}
 					defaultDate={defaultDate}
 					defaultView={Views.MONTH}
 					// view='month'
 					views={{ month: true, day: true }}
-					// events={myEvents}
 					localizer={localizer}
-					onEventDrop={moveEvent}
-					onEventResize={resizeEvent}
 					resizable
 					resourceIdAccessor='resourceId'
 					resources={resourceMap}

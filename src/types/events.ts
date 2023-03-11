@@ -4,6 +4,7 @@ export interface MyEvent extends Event {
 	id: number | string
 	resourceId: number | string
 	textColor: string
+	fixed?: boolean
 }
 
 export interface MyResource {
