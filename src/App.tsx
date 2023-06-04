@@ -84,7 +84,7 @@ function App() {
 	const { bool: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBoolean()
 	const [selectedSlotInfo, setSelectedSlotInfo] = useState<SlotInfo | null>(null)
 	const [selectedEvent, setSelectedEvent] = useState<MyEvent | null>(null)
-	console.log(myEvents)
+
 	const [searchText, setSearchText] = useState<string>('')
 	const calendarRef = useRef<any>()
 
@@ -156,19 +156,15 @@ function App() {
 		)
 
 	const onDragStart: NonNullable<withDragAndDropProps<MyEvent, MyResource>['onDragStart']> =
-		useCallback(({ event, action, direction }) => {
-			console.log('onDragStart')
-		}, [])
+		useCallback(({ event, action, direction }) => {}, [])
 
 	const onSelectEvent: CalendarProps<MyEvent, MyResource>['onSelectEvent'] = (event, e) => {
-		console.log('onSelectEvent')
 		e.stopPropagation()
 		setSelectedEvent(event)
 		openModal()
 	}
 
 	const onSelectSlot: CalendarProps<MyEvent, MyResource>['onSelectSlot'] = (slotInfo) => {
-		console.log('onSelectSlot')
 		setSelectedSlotInfo(slotInfo)
 		openModal()
 	}
@@ -226,25 +222,10 @@ function App() {
 
 	const components: Components<MyEvent, MyResource> = useMemo(
 		() => ({
-			// dateCellWrapper: CustomDateCellWrapper, // day cell
-			// eventWrapper: CustomEventWrapper,
-			// eventContainerWrapper: (p: any) => {
-			// 	return <Box sx={{ border: '1px solid green' }}>{p.title}</Box>
-			// },
-			// eventContainerWrapper: CustomEventContainerWrapper,
-			// timeSlotWrapper: MyTimeSlotWrapper,
-			// event: CustomEvent,
 			backgroundEventsWrapper: (p: any) => {
-				console.log('PROPS', p)
 				return <Box sx={{ border: '10px solid green' }}>{p.children}</Box>
 			},
-
 			day: { event: CustomDayEvent },
-			month: {
-				// event: MyMonthEvent,
-				// header: MyMonthHeader,
-				// dateHeader: MyMonthDateHeader,
-			},
 		}),
 		[]
 	)
